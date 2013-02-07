@@ -28,30 +28,38 @@ public class UserControllerTest {
     @InjectMocks
     private UserController userConstroller;
 
-    private User expected;
+    private User expectedUser;
+    private String expectedToken;
 
     @Before
     public void before() {
         User.Builder builder = new User.Builder();
-        expected = builder.newUser("user").setPassword("qwerty").
+        expectedUser = builder.newUser("user").setPassword("qwerty").
                 setFirstName("first").setLastName("last").
                 build();
+        expectedToken = "token";
     }
 
     @Test
     public void loginOkTest() {
-        given(userService.auth(expected.getId(), expected.getPassword())).willReturn(expected);
+        given(userService.auth(expectedUser.getId(), expectedUser.getPassword())).willReturn(expectedUser);
+        given(sessionService.generateToken(expectedUser.getId())).willReturn(expectedToken);
 
-        // when
-        String token = userConstroller.login(expected.getId(), expected.getPassword());
+        //when
+        String token = userConstroller.login(expectedUser.getId(), expectedUser.getPassword());
 
         // then
-        assertThat(token, is(isNotNull()));
+        assertThat(token, is(expectedToken));
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void loginFailedTest() {
-        given(userService.auth(expected.getId(), expected.getPassword())).willThrow(IllegalArgumentException.class);
-        when(userConstroller.login(expected.getId(), expected.getPassword())).thenThrow(new IllegalArgumentException());
+        given(userService.auth(expectedUser.getId(), expectedUser.getPassword())).willThrow(new IllegalArgumentException());
+        given(sessionService.generateToken(expectedUser.getId())).willReturn(expectedToken);
+
+        //when
+        userConstroller.login(expectedUser.getId(), expectedUser.getPassword());
+
+        // then exception
     }
 }
